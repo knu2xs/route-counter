@@ -13,25 +13,32 @@ stores = r'Default Group Layer\REI'
 output = r'D:\dev\route-segment-utilities\data.gdb\routes_count'
 
 # create a route layer to work with
+arcpy.AddMessage('Setting up routing solution.')
 route_lyr = arcpy.MakeClosestFacilityLayer_na(network, 'closestFacility', "Minutes")[0]
 
 # add the stores to the route layer
+arcpy.AddMessage('Adding stores to routing solution.')
 arcpy.AddLocations_na(route_lyr, 'Facilities', stores, 'LOCNUM Name #', '5000 meters')
 
 # add the customers to the route layer
+arcpy.AddMessage('Adding customers to routing solution.')
 arcpy.AddLocations_na(route_lyr, 'Incidents', customers, 'OBJECTID Name #', '5000 meters')
 
 # solve the route
+arcpy.AddMessage('Solving routing solution.')
 arcpy.Solve_na(route_lyr)
 
 # get the route layer to work with
 route_lyr = arcpy.mapping.ListLayers(route_lyr, 'Routes')[0]
 
 # split the road line segments at every crossing or intersection
+arcpy.AddMessage('Splitting roads into discrete segments at intersections.')
 roads_temp = arcpy.FeatureToLine_management(route_lyr, 'in_memory/roads_temp')[0]
 
 # create a dataset with no overlapping features
+arcpy.AddMessage('Creating a dataset with no overlaps.')
 roads_single = arcpy.DeleteIdentical_management(roads_temp, 'Shape')[0]
 
 # use spatial join to get the feature count
+arcpy.AddMessage('Getting the segment count for overlapping roads.')
 roads_spatialJoin = arcpy.SpatialJoin_analysis(roads_single, roads_temp, output)
