@@ -25,25 +25,54 @@ def get_closest_facility_routes(network, stores, customers):
     :param customers: Customer locations.
     :return: Route feature layer.
     """
+    # set the workspace so the network analysis has a place to save output
+    arcpy.env.workspace = arcpy.env.scratchGDB
 
     # create a route layer to work with
     arcpy.AddMessage('Setting up routing solution.')
-    route_lyr = arcpy.MakeClosestFacilityLayer_na(network, 'closestFacility', "Minutes")[0]
+    route_lyr = arcpy.na.MakeClosestFacilityAnalysisLayer(
+        network_data_source=network,
+        layer_name='Closest Facility',
+        travel_mode='Driving',
+        travel_direction="TO_FACILITIES",
+        cutoff=None,
+        number_of_facilities_to_find=1,
+        line_shape='ALONG_NETWORK',
+        accumulate_attributes='Minutes;TravelTime'
+    )[0]
 
     # add the stores to the route layer
     arcpy.AddMessage('Adding stores to routing solution.')
-    arcpy.AddLocations_na(route_lyr, 'Facilities', stores, 'LOCNUM Name #', '5000 meters')
+    store_id_field = 'LOCNUM'
+    arcpy.na.AddLocations(
+        in_network_analysis_layer=route_lyr,
+        sub_layer='Facilities',
+        in_table=stores,
+        field_mappings='{} Name #'.format(store_id_field),
+        search_tolerance='5000 Meters',
+        snap_to_position_along_network=True,
+        snap_offset='5 Meters'
+    )
 
     # add the customers to the route layer
     arcpy.AddMessage('Adding customers to routing solution.')
-    arcpy.AddLocations_na(route_lyr, 'Incidents', customers, 'OBJECTID Name #', '5000 meters')
+    facility_id_field = 'OBJECTID'
+    arcpy.na.AddLocations(
+        in_network_analysis_layer=route_lyr,
+        sub_layer='Incidents',
+        in_table=customers,
+        field_mappings='{} Name #'.format(facility_id_field),
+        search_tolerance='5000 Meters',
+        snap_to_position_along_network=True,
+        snap_offset='5 Meters'
+    )
 
     # solve the route
     arcpy.AddMessage('Solving routing solution.')
     arcpy.Solve_na(route_lyr)
 
     # return the route layer to work with
-    return arcpy.mapping.ListLayers(route_lyr, 'Routes')[0]
+    return route_lyr.listLayers('Routes')[0]
 
 
 def get_route_segment_count_feature_class(routes_feature_layer, output_route_count_feature_class):
