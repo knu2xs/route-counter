@@ -1,4 +1,6 @@
 import arcpy
+# from route_segmentation import get_route_count_feature_class
+from get_business_analyst_data_paths import get_usa_network_dataset_path
 
 
 class Toolbox(object):
@@ -18,6 +20,10 @@ class GetRouteCountFeatureClass(object):
         self.label = "Get Route Count Feature Class"
         self.description = "Get feature class with overlapping route count."
         self.canRunInBackground = True
+
+        # couple of properties needed in tool
+        self.store_field_dictionary = {}
+        self.customer_id_dictionary = {}
 
     def getParameterInfo(self):
         """Define parameter definitions"""
@@ -39,7 +45,7 @@ class GetRouteCountFeatureClass(object):
         store_id_field = arcpy.Parameter(
             displayName='Stores Unique Identifier Field',
             name='store_id_field',
-            datatype='Field',
+            datatype='GPString',
             parameterType='Required',
             direction='input'
         )
@@ -53,7 +59,7 @@ class GetRouteCountFeatureClass(object):
         customer_id_field = arcpy.Parameter(
             displayName='Customers Unique Identifier Field',
             name='customer_id_field',
-            datatype='Field',
+            datatype='GPString',
             parameterType='Required',
             direction='input'
         )
@@ -66,8 +72,13 @@ class GetRouteCountFeatureClass(object):
         )
 
         # disable the field selector parameters
+        store_id_field.enabled = False
+        customer_id_field.enabled = False
 
+        # set the default path for the network dataset
+        network.value = get_usa_network_dataset_path()
 
+        # roll up all the parameters into a single list and return it
         params = [network, stores, store_id_field, customers, customer_id_field, output_feature_class]
         return params
 
@@ -79,6 +90,43 @@ class GetRouteCountFeatureClass(object):
         """Modify the values and properties of parameters before internal
         validation is performed.  This method is called whenever a parameter
         has been changed."""
+        # helper function to create a dictionary of field aliases and field names
+        def get_field_dictionary(feature_layer):
+
+            # create a dictionary to store values
+            field_dictionary = {}
+
+            # iterate the field list and create dictionary entries for aliases and names
+            for field in arcpy.ListFields(feature_layer):
+                field_dictionary[field.aliasName] = field.name
+
+            # return the populated dictionary
+            return field_dictionary
+
+        # if the store feature layer parameter has been changed and there is something in it
+        if parameters[1].value and parameters[1].altered:
+
+            # get a dictionary of field aliases and names
+            self.store_field_dictionary = get_field_dictionary(parameters[1].valueAsText)
+
+            # create a list of field aliases from the dictionary keys and feed it into the store UID parameter
+            parameters[2].filter.list = [key for key in self.store_field_dictionary.keys()]
+
+            # enable the store UID parameter
+            parameters[2].enabled = True
+
+        # if the customer feature layer parameter has been changes and there is something in it
+        if parameters[3].value and parameters[3].altered:
+
+            # get a dictionary of field aliases and names
+            self.customer_id_dictionary = get_field_dictionary(parameters[3].valueAsText)
+
+            # create a list of field aliases from the dictionary keys and feed it into the customer UID parameter
+            parameters[4].filter.list = [key for key in self.customer_id_dictionary.keys()]
+
+            # enable the customer UID parameter
+            parameters[4].enabled = True
+
         return
 
     def updateMessages(self, parameters):
