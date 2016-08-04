@@ -17,7 +17,7 @@ stores = arcpy.GetParameterAsText(2)
 output = arcpy.GetParameterAsText(3)
 
 
-def get_closest_facility_routes(network, stores, customers):
+def get_closest_facility_routes(network, stores, store_id_field, customers, customer_id_field):
     """
     Get the routes for matching each customer with the closest store.
     :param network: Network dataset to be used for solving.
@@ -43,7 +43,6 @@ def get_closest_facility_routes(network, stores, customers):
 
     # add the stores to the route layer
     arcpy.AddMessage('Adding stores to routing solution.')
-    store_id_field = 'LOCNUM'
     arcpy.na.AddLocations(
         in_network_analysis_layer=route_lyr,
         sub_layer='Facilities',
@@ -56,12 +55,11 @@ def get_closest_facility_routes(network, stores, customers):
 
     # add the customers to the route layer
     arcpy.AddMessage('Adding customers to routing solution.')
-    facility_id_field = 'OBJECTID'
     arcpy.na.AddLocations(
         in_network_analysis_layer=route_lyr,
         sub_layer='Incidents',
         in_table=customers,
-        field_mappings='{} Name #'.format(facility_id_field),
+        field_mappings='{} Name #'.format(customer_id_field),
         search_tolerance='5000 Meters',
         snap_to_position_along_network=True,
         snap_offset='5 Meters'
@@ -94,3 +92,22 @@ def get_route_segment_count_feature_class(routes_feature_layer, output_route_cou
     # use spatial join to get the feature count
     arcpy.AddMessage('Getting the segment count for overlapping roads.')
     return arcpy.SpatialJoin_analysis(roads_single, roads_temp, output_route_count_feature_class)[0]
+
+
+def get_route_count_feature_class(network, stores, store_id_field, customers, customer_id_field, output_feature_class):
+    """
+    Route from each customer to the closest store. Dissolve the overlapping route segments into single feature line
+    segments with the overlapping count saved as an attribute.
+    :param network: Transportation network to be used for routing.
+    :param stores: Feature layer with the store locations.
+    :param store_id_field: Attribute field with the unique identifier to be used to identify each store.
+    :param customers: Feature layer with customer locations.
+    :param customer_id_field: Attribute field with the unique identifier to be used to identify each customer.
+    :param output_feature_class: Location to store output feature class.
+    :return: Path to output feature class.
+    """
+    # get the raw routes
+    routes_lyr = get_closest_facility_routes(network, stores, store_id_field, customers, customer_id_field)
+
+    # distill the raw routes into non-overlapping lines with feature counts
+    return get_route_segment_count_feature_class(routes_lyr, output_feature_class)
