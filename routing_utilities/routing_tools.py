@@ -7,6 +7,7 @@ Father:     Joel McCune (https://github.com/knu2xs)
 import arcpy
 import os.path
 
+
 def get_closest_facility_routes(network, stores, store_id_field, customers, customer_id_field):
     """
     Get the routes for matching each customer with the closest store.
@@ -84,6 +85,7 @@ def get_route_segment_count_feature_class(routes_feature_layer, output_route_cou
     joined_roads = arcpy.SpatialJoin_analysis(roads_single, roads_temp, 'in_memory/joined_roads_temp')[0]
 
     # use feature class to feature class to delete unwanted fields and write a simpler output
+    arcpy.AddMessage('Saving result.')
     return arcpy.conversion.FeatureClassToFeatureClass(
         in_features=joined_roads,
         out_path=os.path.dirname(output_route_count_feature_class),
@@ -107,3 +109,52 @@ def get_route_count_feature_class(network, stores, customers, output_feature_cla
 
     # distill the raw routes into non-overlapping lines with feature counts
     return get_route_segment_count_feature_class(routes_lyr, output_feature_class)
+
+
+def add_customer_drive_time_closest(network, stores, customers):
+    """
+    Add and calculate drive time field for customer features to closest store location.
+    :param network: Transportation network to be used for routing.
+    :param stores: Feature layer with the store locations.
+    :param customers: Feature layer with customer locations.
+    :return: Path back to customers feature class.
+    """
+    # get the routes feature layer
+    routes = get_closest_facility_routes(network, stores, None, customers, None)
+
+    # create dictionary to store all customer feature id's and travel times
+    travel_dictionary = {}
+
+    # create a search cursor to iterate the routes feature layer
+    with arcpy.da.SearchCursor(routes, ['IncidentID', 'Total_Minutes']) as search_cursor:
+
+        # iterate the routes
+        for row in search_cursor:
+
+            # populate the dictionary with the feature id as the key and travel time as the value
+            travel_dictionary[row[0]] = row[1]
+
+    # add the travel time minutes field to the customers feature class
+    arcpy.AddMessage('Adding drive time field to customers feature class.')
+    arcpy.management.AddField(
+        in_table=customers,
+        field_name='travelTimeMinutes',
+        field_alias='Travel Time (minutes)',
+        field_type='DOUBLE'
+    )
+
+    # create an update cursor for populating the new field
+    arcpy.AddMessage('Writing drive time values to drive time field.')
+    with arcpy.da.UpdateCursor(customers, ['OID@', 'travelTimeMinutes']) as update_cursor:
+
+        # iterate the rows
+        for row in update_cursor:
+
+            # use the feature id to look up the travel time and populate the field
+            update_cursor.updateRow([
+                row[0],
+                travel_dictionary[row[0]]
+            ])
+
+    # done - return the path to the customers feature layer
+    return customers
