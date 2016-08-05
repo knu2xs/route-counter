@@ -84,20 +84,18 @@ def get_route_segment_count_feature_class(routes_feature_layer, output_route_cou
     return arcpy.SpatialJoin_analysis(roads_single, roads_temp, output_route_count_feature_class)[0]
 
 
-def get_route_count_feature_class(network, stores, store_id_field, customers, customer_id_field, output_feature_class):
+def get_route_count_feature_class(network, stores, customers, output_feature_class):
     """
     Route from each customer to the closest store. Dissolve the overlapping route segments into single feature line
     segments with the overlapping count saved as an attribute.
     :param network: Transportation network to be used for routing.
     :param stores: Feature layer with the store locations.
-    :param store_id_field: Attribute field with the unique identifier to be used to identify each store.
     :param customers: Feature layer with customer locations.
-    :param customer_id_field: Attribute field with the unique identifier to be used to identify each customer.
     :param output_feature_class: Location to store output feature class.
     :return: Path to output feature class.
     """
     # get the raw routes
-    routes_lyr = get_closest_facility_routes(network, stores, store_id_field, customers, customer_id_field)
+    routes_lyr = get_closest_facility_routes(network, stores, None, customers, None)
 
     # distill the raw routes into non-overlapping lines with feature counts
     return get_route_segment_count_feature_class(routes_lyr, output_feature_class)
