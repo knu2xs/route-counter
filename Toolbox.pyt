@@ -33,11 +33,34 @@ class GetRouteCountFeatureClass(object):
     def getParameterInfo(self):
         """Define parameter definitions"""
         # define parameters
-        network = arcpy.Parameter('Transportation Network', 'network', 'DENetworkDataset', 'Required', 'input')
-        stores = arcpy.Parameter('Stores Feature Layer', 'stores', 'GPFeatureLayer', 'Required', 'input')
-        customers = arcpy.Parameter('Customers Feature Layer', 'customers', 'GPFeatureLayer', 'Required', 'input')
-        output_feature_class = arcpy.Parameter('Output Feature Class', 'output_feature_class', 'DEFeatureClass',
-                                               'Required', 'output')
+        network = arcpy.Parameter(
+            displayName='Transportation Network',
+            name='network',
+            datatype='DENetworkDataset',
+            parameterType='Required',
+            direction='input'
+        )
+        stores = arcpy.Parameter(
+            displayName='Stores Feature Layer',
+            name='stores',
+            datatype='GPFeatureLayer',
+            parameterType='Required',
+            direction='input'
+        )
+        customers = arcpy.Parameter(
+            displayName='Customers Feature Layer',
+            name='customers',
+            datatype='GPFeatureLayer',
+            parameterType='Required',
+            direction='input'
+        )
+        output_feature_class = arcpy.Parameter(
+            displayName='Output Feature Class',
+            name='output_feature_class',
+            datatype='DEFeatureClass',
+            parameterType='Required',
+            direction='output'
+        )
 
         # set the default path for the network dataset
         network.value = get_usa_network_dataset_path()

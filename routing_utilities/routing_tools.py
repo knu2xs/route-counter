@@ -5,7 +5,7 @@ Father:     Joel McCune (https://github.com/knu2xs)
 """
 # import modules
 import arcpy
-
+import os.path
 
 def get_closest_facility_routes(network, stores, store_id_field, customers, customer_id_field):
     """
@@ -81,7 +81,15 @@ def get_route_segment_count_feature_class(routes_feature_layer, output_route_cou
 
     # use spatial join to get the feature count
     arcpy.AddMessage('Getting the segment count for overlapping roads.')
-    return arcpy.SpatialJoin_analysis(roads_single, roads_temp, output_route_count_feature_class)[0]
+    joined_roads = arcpy.SpatialJoin_analysis(roads_single, roads_temp, 'in_memory/joined_roads_temp')[0]
+
+    # use feature class to feature class to delete unwanted fields and write a simpler output
+    return arcpy.conversion.FeatureClassToFeatureClass(
+        in_features=joined_roads,
+        out_path=os.path.dirname(output_route_count_feature_class),
+        out_name=os.path.basename(output_route_count_feature_class),
+        field_mapping='routeCount "Route Count" true true false 4 Long 0 0,First,#,{},Join_Count,-1,-1'.format(joined_roads)
+    )[0]
 
 
 def get_route_count_feature_class(network, stores, customers, output_feature_class):
