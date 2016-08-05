@@ -1,5 +1,10 @@
+"""
+Purpose:    Toolbox for routing utilities useful for creating demonstration datasets.
+Developer:  Joel McCune (joel.mccune@gmail.com)
+DOB:        04 Aug 2016
+"""
 import arcpy
-# from route_segmentation import get_route_count_feature_class
+from routing_utilities import get_route_count_feature_class
 from get_business_analyst_data_paths import get_usa_network_dataset_path
 
 
@@ -68,7 +73,7 @@ class GetRouteCountFeatureClass(object):
             name='output_feature_class',
             datatype='DEFeatureClass',
             parameterType='Required',
-            direction='input'
+            direction='output'
         )
 
         # disable the field selector parameters
@@ -136,4 +141,11 @@ class GetRouteCountFeatureClass(object):
 
     def execute(self, parameters, messages):
         """The source code of the tool."""
+        # look up the field names from the parameter inputs using field aliases
+        store_id_field = self.store_field_dictionary[parameters[2]]
+        customer_id_field = self.customer_id_dictionary[parameters[4]]
+
+        # execute the tool
+        get_route_count_feature_class(parameters[0], parameters[1], store_id_field, parameters[3], customer_id_field,
+                                      parameters[5])
         return

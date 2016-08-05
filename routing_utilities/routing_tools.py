@@ -6,16 +6,6 @@ Father:     Joel McCune (https://github.com/knu2xs)
 # import modules
 import arcpy
 
-# variables
-# network = r'D:\arcgisBusinessAnalystData_USA\Data\Streets Data\NAVTEQ_2014_Q3_NA.gdb\Routing\Routing_ND'
-# customers = r'Default Group Layer\Customers'
-# stores = r'Default Group Layer\REI'
-# output = r'D:\dev\route-segment-utilities\data.gdb\routes_count'
-network = arcpy.GetParameterAsText(0)
-customers = arcpy.GetParameterAsText(1)
-stores = arcpy.GetParameterAsText(2)
-output = arcpy.GetParameterAsText(3)
-
 
 def get_closest_facility_routes(network, stores, store_id_field, customers, customer_id_field):
     """
