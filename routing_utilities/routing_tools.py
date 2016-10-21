@@ -39,7 +39,7 @@ def get_closest_facility_routes(network, stores, store_id_field, customers, cust
         sub_layer='Facilities',
         in_table=stores,
         field_mappings='{} Name #'.format(store_id_field),
-        search_tolerance='5000 Meters',
+        search_tolerance='500 Meters',
         snap_to_position_along_network=True,
         snap_offset='5 Meters'
     )
@@ -51,7 +51,7 @@ def get_closest_facility_routes(network, stores, store_id_field, customers, cust
         sub_layer='Incidents',
         in_table=customers,
         field_mappings='{} Name #'.format(customer_id_field),
-        search_tolerance='5000 Meters',
+        search_tolerance='500 Meters',
         snap_to_position_along_network=True,
         snap_offset='5 Meters'
     )
@@ -150,10 +150,11 @@ def add_customer_drive_time_closest(network, stores, customers):
         # iterate the rows
         for row in update_cursor:
 
-            # use the feature id to look up the travel time and populate the field
+            # use the feature id to look up the travel time and populate the field, and use none/null if the key
+            # is not populated - possible if the solve was not able to create a route
             update_cursor.updateRow([
                 row[0],
-                travel_dictionary[row[0]]
+                travel_dictionary.get(row[0], None)
             ])
 
     # done - return the path to the customers feature layer
